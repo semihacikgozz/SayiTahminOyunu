@@ -4,33 +4,48 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-// SQL Server ile iletişim kurmamızı sağlayan temel kütüphane.
-// Bu kütüphane olmadan SqlConnection, SqlCommand gibi komutları kullanamayız.
-using System.Data.SqlClient;
+// Gerekli Kütüphaneler:
+using System.Data.SqlClient;           // SQL işlemleri için
+using System.Security.Cryptography;    // MD5 Şifreleme için
 
 namespace SayiTahminOyunu
 {
-    // VERİTABANI BAĞLANTI SINIFI (Database Connection Class)
-    // Amaç: Projenin her formunda (Giriş, Kayıt, Oyun) tekrar tekrar bağlantı cümlesi yazmamak.
-    // Bağlantı adresini tek bir yerden yöneterek kod tekrarını önlüyoruz.
     class SQLBaglantisi
     {
-        // Bu metot geriye açık bir "SqlConnection" nesnesi döndürür.
+        // 1. BAĞLANTI METODU
         public SqlConnection Baglanti()
         {
-            // 1. BAĞLANTI CÜMLESİ (Connection String)
-            // Data Source: Sunucu adresi (.\SQLEXPRESS veya . nokta işareti 'yerel bilgisayar' demektir).
-            // Initial Catalog: Bağlanacağımız veritabanının adı.
-            // Integrated Security=True: Şifre yazmadan, Windows hesabıyla güvenli giriş yap.
+            // Veritabanı adresimiz
             SqlConnection baglan = new SqlConnection("Data Source=.\\SQLEXPRESS;Initial Catalog=ProjeOyunDB;Integrated Security=True");
 
-            // 2. BAĞLANTIYI AÇMA
-            // Bağlantıyı burada açıyoruz ki, çağıran form tekrar açmakla uğraşmasın.
-            baglan.Open();
+            baglan.Open(); // Bağlantıyı aç
+            return baglan; // Açık bağlantıyı gönder
+        }
 
-            // 3. NESNEYİ GÖNDERME
-            // Açık haldeki bağlantıyı, bu metodu çağıran yere (Örn: Form1'e) teslim ediyoruz.
-            return baglan;
+        // 2. MD5 ŞİFRELEME METODU 
+        public string MD5Sifrele(string sifrelenecekMetin)
+        {
+            // MD5 nesnesini oluşturuyoruz
+            MD5CryptoServiceProvider md5 = new MD5CryptoServiceProvider();
+
+            // Metni byte dizisine çeviriyoruz
+            byte[] dizi = Encoding.UTF8.GetBytes(sifrelenecekMetin);
+
+            // Diziyi şifreliyoruz (Hash işlemi)
+            dizi = md5.ComputeHash(dizi);
+
+            // StringBuilder: Şifrelenmiş karmaşık karakterleri birleştirmek için kullanıyoruz
+            StringBuilder sb = new StringBuilder();
+
+            // Döngü ile şifreli byte'ları tek tek geziyoruz
+            foreach (byte ba in dizi)
+            {
+                // Her byte'ı hex (onaltılık) formata çevirip string'e ekliyoruz
+                sb.Append(ba.ToString("x2").ToLower());
+            }
+
+            // Sonuç olarak çıkan uzun şifreli metni geri döndürüyoruz
+            return sb.ToString();
         }
     }
 }

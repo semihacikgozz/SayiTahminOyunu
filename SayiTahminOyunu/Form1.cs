@@ -8,17 +8,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-// SQL Server ile iletişim kurmamızı sağlayan kütüphane
+// SQL kütüphanesi
 using System.Data.SqlClient;
 
 namespace SayiTahminOyunu
 {
-    // Giriş Ekranı (Login Form)
     public partial class Form1 : Form
     {
-        // GLOBAL DEĞİŞKEN:
-        // 'static' ifadesi ile bu değişkene projenin her yerinden ulaşılmasını sağlıyoruz.
-        // Amaç: Giriş yapan kullanıcının adını (kadi) hafızada tutup Oyun ekranına taşımak.
+        // GLOBAL DEĞİŞKEN: Giriş yapanın adını burada tutuyoruz.
         public static string kadi = "";
 
         public Form1()
@@ -26,74 +23,55 @@ namespace SayiTahminOyunu
             InitializeComponent();
         }
 
-        // --- FORM YÜKLENDİĞİNDE ÇALIŞAN KODLAR ---
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Kullanıcı kolaylığı (UX): Form açılır açılmaz imleç 
-            // Kullanıcı Adı kutusunda yanıp sönsün, tıklamakla uğraşmasın.
-            txtKullaniciAdi.Focus();
+            txtKullaniciAdi.Focus(); // İmleç direkt burada başlar
         }
 
-        // --- KAYIT OL BUTONU ---
         private void btnKayitOl_Click(object sender, EventArgs e)
         {
-            // Kayıt olma formunu (nesnesini) türetiyoruz.
             FormKayit fr = new FormKayit();
-
-            // Kayıt formunu ekrana getiriyoruz (Show).
             fr.Show();
         }
 
-        // --- GİRİŞ YAP BUTONU (KRİTİK BÖLÜM) ---
         private void btnGiris_Click(object sender, EventArgs e)
         {
-            // 1. ADIM: BAĞLANTIYI HAZIRLAMA
-            // Veritabanı bağlantılarını yönettiğimiz sınıfı çağırıyoruz.
+            // 1. BAĞLANTIYI HAZIRLA
             SQLBaglantisi bgl = new SQLBaglantisi();
-
-            // Bağlantı nesnesini bir değişkene atıyoruz ki işlem bitince kapatabilelim.
-            // Bu yöntem sunucu kaynaklarını verimli kullanmak için önemlidir.
             SqlConnection conn = bgl.Baglanti();
 
-            // 2. ADIM: SORGUSU OLUŞTURMA (Query)
-            // Kullanıcının girdiği Ad ve Şifre veritabanında var mı?
-            // String birleştirme yöntemi ile SQL sorgusunu dinamik olarak oluşturuyoruz.
-            string sorgu = "SELECT * FROM tblKullanicilar WHERE KullaniciAdi='" + txtKullaniciAdi.Text + "' AND Sifre='" + txtParola.Text + "'";
+            // --- YENİ EKLENEN KISIM: ŞİFRELEME ---
+            // Kullanıcının girdiği şifreyi (Örn: 1234) veritabanındaki formatına (MD5) çeviriyoruz.
+            // Çünkü veritabanında şifreler gizli (hashlenmiş) saklanıyor.
+            string kodlanmisGirisSifresi = bgl.MD5Sifrele(txtParola.Text);
 
-            // 3. ADIM: KOMUTU GÖNDERME
-            // Sorguyu ve açık olan bağlantıyı SqlCommand nesnesine teslim ediyoruz.
+            // 2. SORGUSU OLUŞTURMA
+            // Sorguda artık kullanıcının yazdığını değil, kodlanmış halini soruyoruz.
+            // Eşleşme olması için bu şart.
+            string sorgu = "SELECT * FROM tblKullanicilar WHERE KullaniciAdi='" + txtKullaniciAdi.Text + "' AND Sifre='" + kodlanmisGirisSifresi + "'";
+
             SqlCommand komut = new SqlCommand(sorgu, conn);
 
-            // 4. ADIM: VERİYİ OKUMA (Reading)
-            // ExecuteReader: Veritabanından gelen sonuçları okumak için kullanılır (Select işlemleri için).
+            // 3. OKUMA VE KONTROL
             SqlDataReader dr = komut.ExecuteReader();
 
-            // 5. ADIM: KONTROL VE YÖNLENDİRME
-            // dr.Read(): Eğer sorgu sonucunda eşleşen bir kayıt (satır) bulunursa TRUE döner.
             if (dr.Read())
             {
-                // Giriş Başarılıysa:
-                kadi = txtKullaniciAdi.Text; // Kullanıcının adını statik değişkene ata.
-
+                // Giriş Başarılı
+                kadi = txtKullaniciAdi.Text;
                 MessageBox.Show("Giriş Başarılı! Menüye yönlendiriliyorsunuz...");
 
-                // Menü formunu aç
                 FormMenu frm = new FormMenu();
                 frm.Show();
-
-                // Giriş ekranını (bu formu) gizle, arkada açık kalmasın.
                 this.Hide();
             }
             else
             {
-                // Giriş Başarısızsa:
+                // Giriş Başarısız
                 MessageBox.Show("Hatalı Kullanıcı Adı veya Parola!", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
-            // 6. ADIM: TEMİZLİK
-            // İşimiz bittiğinde bağlantıyı mutlaka kapatıyoruz.
-            // Açık kalan bağlantılar veritabanı performansını düşürebilir.
-            conn.Close();
+            conn.Close(); // Bağlantıyı kapatmayı unutmuyoruz
         }
     }
 }
