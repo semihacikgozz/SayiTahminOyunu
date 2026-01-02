@@ -32,12 +32,3 @@ Bu modda sayılar yerine renkler tahmin edilir. Arayüz dinamik olarak değişir
 
 * **Algoritma Mantığı:**
     * Sayıları veya renkleri üretirken `List` koleksiyon yapısını kullandım. `Contains` metodu ile üretilen sayının/rengin daha önce listede olup olmadığını kontrol ettim. Böylece tekrarsız (benzersiz) üretim sağladım.
-
----
-
-## 🚀 Kurulum
-
-Projeyi kendi bilgisayarınızda çalıştırmak için:
-1.  SQL Server'da `ProjeOyunDB` adında bir veritabanı oluşturun.
-2.  `tblKullanicilar` ve `tblSkorlar` tablolarını projeye uygun sütunlarla ekleyin.
-3.  `SQLBaglantisi.cs` dosyasındaki "Connection String" adresini kendi bilgisayarınıza göre güncelleyin.
